@@ -178,7 +178,6 @@ def plot_grid(images, titles=None, images_per_row=3, cmap='gray', norm=mpl.color
                 a_ij = axes[i]
             else:
                 a_ij = axes[i, j]
-            a_ij.axis('off')
             if idx >= num_images:
                 break
 
@@ -186,6 +185,7 @@ def plot_grid(images, titles=None, images_per_row=3, cmap='gray', norm=mpl.color
                 viz_heatmap(a_ij, images[idx])
             else:
                 a_ij.imshow(images[idx], cmap=cmap[idx], norm=norm, interpolation='nearest')
+                a_ij.axis('off')
 
             a_ij.set_title(titles[idx])
 
