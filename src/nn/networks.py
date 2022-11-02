@@ -120,14 +120,11 @@ class ExplainableNet(nn.Module):
             indices = np.where(indices)[0]
             R[0][indices] = 0
 
-            print(f"Starting R={R.max():.4f}")
-
         for layer in reversed(self.layers):
             if type(layer) == nn.Dropout or type(layer) == nn.Dropout2d:  # ignore Dropout layer
                 continue
 
             R = layer.analyze(method, R)
-            print(f"Layer: {layer} {R.shape} {R.sum()}")
 
         return R
 

@@ -81,9 +81,7 @@ def main():
     plt.savefig(f"{output_dir}/ori_hm.png")
     plt.close()
 
-    return
 
-    # return
     target_expl, _, _ = get_expl(model, x_target, method)
     target_expl = target_expl.detach()
 

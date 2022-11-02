@@ -189,8 +189,6 @@ class Convolutional(nn.Module):
 
         S = R / Z
 
-        print("L, H", self.lowest, self.highest)
-
         out = self.deconvolve(S, weights)
 
         newR = self.X * out  - L * self.deconvolve(S, p_weights) - H * self.deconvolve(S, n_weights)
