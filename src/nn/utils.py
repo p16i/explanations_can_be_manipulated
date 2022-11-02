@@ -87,8 +87,6 @@ def get_expl(model, x, method, desired_index=None):
 
     heatmap = torch.sum(heatmap, dim=1)
 
-    print("hm.sum", heatmap.sum())
-
     return heatmap, acc, class_idx
 
 
