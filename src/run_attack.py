@@ -103,16 +103,13 @@ def main():
 
         # calculate loss
         adv_expl, adv_acc, class_idx = get_expl(model, x_adv, method, desired_index=org_idx)
-        loss_expl = F.mse_loss(adv_expl, target_expl)
+        loss_expl = F.mse_loss(adv_expl / adv_expl.sum(), target_expl / target_expl.sum())
         loss_output = F.mse_loss(adv_acc, org_acc.detach())
         total_loss = args.prefactors[0]*loss_expl + args.prefactors[1]*loss_output
 
         # update adversarial example
         total_loss.backward()
         optimizer.step()
-
-
-        print("norm grad", (x_adv.grad **2).sum())
 
 
         # clamp adversarial example
