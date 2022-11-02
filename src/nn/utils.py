@@ -14,6 +14,25 @@ if os.environ.get('DISPLAY', '') == '':
 import matplotlib.pyplot as plt
 
 
+
+from matplotlib import pyplot as plt
+from matplotlib.colors import ListedColormap
+
+
+def viz_heatmap(ax, heatmap):
+
+
+    my_cmap = plt.cm.seismic(np.arange(plt.cm.seismic.N))
+    my_cmap[:, 0:3] *= 0.85
+    my_cmap = ListedColormap(my_cmap)
+
+    b = np.abs(heatmap).max()
+
+    ax.imshow(heatmap, vmin=-b, vmax=b, cmap=my_cmap)
+    ax.set_xticks([]); ax.set_yticks([])
+
+    ax.set_xlabel(f"$\sum R_i = {heatmap.sum():.4f}$")
+
 def plot_overview(images, heatmaps, mean, std,
                   captions=['Target Image', 'Original Image', 'Manipulated Image', 'Target Explanation', 'Original Explanation', 'Manipulated Explanation'],
                   filename="overview.png", images_per_row=3):
@@ -103,6 +122,7 @@ def torch_to_image(tensor, mean=0, std=1):
 
 
 def heatmap_to_image(heatmap):
+    return heatmap.squeeze().detach().cpu().numpy()
     """
     Helper image to convert torch tensor containing a heatmap into image.
     """
@@ -161,7 +181,12 @@ def plot_grid(images, titles=None, images_per_row=3, cmap='gray', norm=mpl.color
             a_ij.axis('off')
             if idx >= num_images:
                 break
-            a_ij.imshow(images[idx], cmap=cmap[idx], norm=norm, interpolation='nearest')
+
+            if "Explanation" in titles[idx]:
+                viz_heatmap(a_ij, images[idx])
+            else:
+                a_ij.imshow(images[idx], cmap=cmap[idx], norm=norm, interpolation='nearest')
+
             a_ij.set_title(titles[idx])
 
     plt.subplots_adjust(wspace=0.05, hspace=0.05, left=0, right=1, bottom=0, top=1)
