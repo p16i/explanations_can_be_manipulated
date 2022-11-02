@@ -154,23 +154,29 @@ class Dense(nn.Module):
         X = self.X
 
         weight = self.linear.weight
+        bias = self.linear.bias
 
         if self.batch_norm is not None:
             weight = weight * self.batch_norm.weight.unsqueeze(1) / torch.sqrt(
                 self.batch_norm.running_var.unsqueeze(1) + self.batch_norm.eps)
 
-        V = weight.clamp(min=0.0)
-        Z = X.mm(V.t()) + 1e-9
+        # V = weight.clamp(min=0.0)
+        V = weight
+        Z = X.mm(V.t()) + bias + 1e-9
         S = R / Z
         C = S.mm(V)
-        RP = self.alpha * X * C
+        RP = X * C
 
-        V = weight.clamp(max=0.0)
-        Z = X.mm(V.t()) + 1e-9
-        S = R / Z
-        C = S.mm(V)
-        RM = self.beta * X * C
-        Rnew = RP - RM
+        # V = weight.clamp(max=0.0)
+        # Z = X.mm(V.t()) + 1e-9
+        # S = R / Z.detach()
+        # C = S.mm(V)
+        # RM = self.beta * X * C
+        # print("RM", RM.min(), RM.max())
+        Rnew = RP 
+
+        # print(f"[{id(self)}]: {Rnew.shape}: {Rnew.min(), Rnew.max()}")
+        # print(f"[Dense: {id(self)}]: {Rnew.shape}: {Rnew.data.min(), Rnew.data.max(), Rnew.data.sum()}")
 
         return Rnew
 

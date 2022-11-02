@@ -140,43 +140,62 @@ class Convolutional(nn.Module):
     def _lrp_alpha_beta(self, R):
         _, _, height_filter, width_filter = self.conv.weight.shape
 
-        p_weights = self.conv.weight.clamp(min=0)
-        n_weights = self.conv.weight.clamp(max=0)
+        gamma = 0.1
+        weight = self.conv.weight
+        bias = self.conv.bias
 
-        ZA = torch.nn.functional.conv2d(input=self.X, weight=p_weights, bias=None, padding=self.conv.padding,
+        p_weights = weight + gamma*weight.clamp(min=0)
+
+        p_bias = bias + gamma * bias.clamp(min=0)
+
+        ZA = torch.nn.functional.conv2d(input=self.X, weight=p_weights, bias=p_bias, padding=self.conv.padding,
                                         stride=self.conv.stride, groups=self.conv.groups,
                                         dilation=self.conv.dilation) + 1e-9
-        ZB = torch.nn.functional.conv2d(input=self.X, weight=n_weights, bias=None, padding=self.conv.padding,
-                                        stride=self.conv.stride, groups=self.conv.groups,
-                                        dilation=self.conv.dilation) + 1e-9
+        # ZB = torch.nn.functional.conv2d(input=self.X, weight=n_weights, bias=None, padding=self.conv.padding,
+        #                                 stride=self.conv.stride, groups=self.conv.groups,
+        #                                 dilation=self.conv.dilation) + 1e-9
 
-        SA = self.alpha * R / ZA
-        SB = -self.beta * R / ZB
+        SA = R / ZA
+        # SB = -self.beta * R / ZB * 0
 
-        newR = self.X * (self.deconvolve(SA, p_weights) + self.deconvolve(SB, n_weights))
+
+        newR = self.X * (self.deconvolve(SA, p_weights))
+
+        Rnew = newR
+
+        # print(f"[Conv: {id(self)}]: {Rnew.shape}: {Rnew.data.min(), Rnew.data.max(), Rnew.data.sum()}")
 
         return newR
 
     def _lrp_zb(self, R):
 
         weights = self.conv.weight
-        p_weights = self.conv.weight.clamp(min=0)
-        n_weights = self.conv.weight.clamp(max=0)
+        bias = self.conv.bias
+
+        p_weights = weights.clamp(min=0)
+        p_bias = bias.clamp(min=0)
+        n_weights = weights.clamp(max=0)
+        n_bias = bias.clamp(max=0)
 
         L, H = self.lowest * torch.ones_like(self.X), self.highest * torch.ones_like(self.X)
 
-        Z = torch.nn.functional.conv2d(input=self.X, weight=weights, bias=None, padding=self.conv.padding,
+        Z = torch.nn.functional.conv2d(input=self.X, weight=weights, bias=bias, padding=self.conv.padding,
                                        stride=self.conv.stride, groups=self.conv.groups, dilation=self.conv.dilation) \
-            - torch.nn.functional.conv2d(input=L, weight=p_weights, bias=None, padding=self.conv.padding,
+            - torch.nn.functional.conv2d(input=L, weight=p_weights, bias=p_bias, padding=self.conv.padding,
                                          stride=self.conv.stride, groups=self.conv.groups, dilation=self.conv.dilation) \
-            - torch.nn.functional.conv2d(input=H, weight=n_weights, bias=None, padding=self.conv.padding,
+            - torch.nn.functional.conv2d(input=H, weight=n_weights, bias=n_bias, padding=self.conv.padding,
                                          stride=self.conv.stride, groups=self.conv.groups, dilation=self.conv.dilation) \
             + 1e-9
 
         S = R / Z
 
-        newR = self.X * self.deconvolve(S, weights) - L * self.deconvolve(S, p_weights) - H * self.deconvolve(S,
-                                                                                                              n_weights)
+        print("L, H", self.lowest, self.highest)
+
+        out = self.deconvolve(S, weights)
+
+        newR = self.X * out  - L * self.deconvolve(S, p_weights) - H * self.deconvolve(S, n_weights)
+        # print("self.X", self.X[:, :5, 0, 0])
+        # print("self.X.grad", out[:, :5, 0, 0])
 
         return newR
 

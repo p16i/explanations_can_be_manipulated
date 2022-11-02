@@ -16,6 +16,24 @@ def get_beta(i, num_iter):
     start_beta, end_beta = 10.0, 100.0
     return start_beta * (end_beta / start_beta) ** (i / num_iter)
 
+from matplotlib import pyplot as plt
+from matplotlib.colors import ListedColormap
+
+
+def viz_heatmap(heatmap):
+
+
+    my_cmap = plt.cm.seismic(np.arange(plt.cm.seismic.N))
+    my_cmap[:, 0:3] *= 0.85
+    my_cmap = ListedColormap(my_cmap)
+
+    b = np.abs(heatmap).max()
+
+    plt.imshow(heatmap, vmin=-b, vmax=b, cmap=my_cmap)
+    plt.xticks([]); plt.yticks([])
+
+    plt.xlabel(f"$\sum R_i = {heatmap.sum():.4f}$")
+
 
 def main():
     argparser = argparse.ArgumentParser()
@@ -48,6 +66,7 @@ def main():
         model.load_state_dict(torch.load('../models/model_vgg16_pattern_small.pth'), strict=False)
     model = model.eval().to(device)
 
+
     # load images
     x = load_image(data_mean, data_std, device, args.img)
     x_target = load_image(data_mean, data_std, device, args.target_img)
@@ -56,10 +75,27 @@ def main():
     # produce expls
     org_expl, org_acc, org_idx = get_expl(model, x, method)
     org_expl = org_expl.detach().cpu()
+
+    output_dir = make_dir(args.output_dir)
+    viz_heatmap(org_expl.squeeze())
+    plt.savefig(f"{output_dir}/ori_hm.png")
+    plt.close()
+
+    return
+
+    # return
     target_expl, _, _ = get_expl(model, x_target, method)
     target_expl = target_expl.detach()
 
     optimizer = torch.optim.Adam([x_adv], lr=args.lr)
+    print("Ori Acc", torch.topk(org_acc, k=5))
+
+    print(f"Model(beta={model.beta})")
+
+    # for layer in model.layers:
+    #     if hasattr(layer, "activation_fn"):
+    #         print("Layer", layer, getattr(layer, "activation_fn"))
+
 
     for i in range(args.num_iter):
         if args.beta_growth:
@@ -76,6 +112,10 @@ def main():
         # update adversarial example
         total_loss.backward()
         optimizer.step()
+
+
+        print("norm grad", (x_adv.grad **2).sum())
+
 
         # clamp adversarial example
         # Note: x_adv.data returns tensor which shares data with x_adv but requires

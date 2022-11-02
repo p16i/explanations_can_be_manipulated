@@ -79,16 +79,17 @@ def get_expl(model, x, method, desired_index=None):
         y = (1 / num_summands) * torch.sum(y / prefactors, dim=0)
         heatmap = torch.autograd.grad(y, x, create_graph=True)[0]
     else:
+        print("Method", method)
         heatmap = model.analyze(method=method, R=None, index=desired_index)
 
     if method == ExplainingMethod.grad_times_input or method == ExplainingMethod.integrated_grad:
         heatmap = heatmap * x
 
-    heatmap = torch.sum(torch.abs(heatmap), dim=1)
+    heatmap = torch.sum(heatmap, dim=1)
 
-    normalized_heatmap = heatmap / torch.sum(heatmap)
+    print("hm.sum", heatmap.sum())
 
-    return normalized_heatmap, acc, class_idx
+    return heatmap, acc, class_idx
 
 
 def torch_to_image(tensor, mean=0, std=1):
