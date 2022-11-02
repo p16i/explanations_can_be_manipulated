@@ -79,7 +79,6 @@ def get_expl(model, x, method, desired_index=None):
         y = (1 / num_summands) * torch.sum(y / prefactors, dim=0)
         heatmap = torch.autograd.grad(y, x, create_graph=True)[0]
     else:
-        print("Method", method)
         heatmap = model.analyze(method=method, R=None, index=desired_index)
 
     if method == ExplainingMethod.grad_times_input or method == ExplainingMethod.integrated_grad:
