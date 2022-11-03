@@ -5,10 +5,20 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
+# This is taken from https://github.com/oeberle/BiLRP_explain_similarity/blob/master/model/bilrp.py#L10
+def vgg_gamma(i):
+    '''Setting gamma according to vgg layer index i''' 
+    if i <=10:        gamma=0.5
+    if 11 <= i <= 17: gamma=0.25
+    if 18 <= i <= 24: gamma=0.1
+    if i > 24:        gamma=0.0
+    return gamma
+
+
 
 class ExplainableNet(nn.Module):
     def __init__(self, model=None, data_mean=0, data_std=1, lrp_rule_first_layer=LRPRule.z_b,
-                 lrp_rule_next_layers=LRPRule.alpha_beta, beta=None):
+                 lrp_rule_next_layers=LRPRule.gamma, beta=None):
         super(ExplainableNet, self).__init__()
 
         # replace relus by differentiable counterpart for beta growth
@@ -18,6 +28,8 @@ class ExplainableNet(nn.Module):
         self.layers = nn.ModuleList([])
         self.lrp_rule_first_layer = lrp_rule_first_layer
         self.lrp_rule_next_layers = lrp_rule_next_layers
+
+        print("LRP Rule", self.lrp_rule_first_layer, self.lrp_rule_next_layers)
 
         self.data_mean = data_mean
         self.data_std = data_std
@@ -33,17 +45,27 @@ class ExplainableNet(nn.Module):
     def fill_layers(self, model):
         lrp_rule = self.lrp_rule_first_layer
 
-        for layer in model.features:
+        for ix, layer in enumerate(model.features):
             new_layer = self.create_layer(layer, lrp_rule)
             if new_layer == 0:
                 continue
             self.layers.append(new_layer)
             lrp_rule = self.lrp_rule_next_layers
 
-        for layer in model.classifier:
+            # Remark: we only check for convolution because there is no `dense` 
+            # in this part of the model.
+            if isinstance(new_layer, Convolutional):
+                new_layer.gamma = vgg_gamma(ix)
+
+        for iix, layer in enumerate(model.classifier):
             new_layer = self.create_layer(layer, lrp_rule)
             if new_layer == 0:
                 continue
+            # Remark: we only check for `dense` because there is no `convolution` 
+            # in this part of the model.
+            if isinstance(new_layer, Dense):
+                new_layer.gamma = vgg_gamma(ix+iix)
+
             self.layers.append(new_layer)
 
     def create_layer(self, layer, lrp_rule):
