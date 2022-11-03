@@ -91,6 +91,9 @@ def main():
     optimizer = torch.optim.Adam([x_adv], lr=args.lr)
     print("Ori Acc", torch.topk(org_acc, k=5))
 
+    arr_x_adv = [
+        x_adv.detach().cpu()
+    ]
 
     for i in range(args.num_iter):
         if args.beta_growth:
@@ -117,6 +120,12 @@ def main():
 
         print("Iteration {}: Total Loss: {}, Expl Loss: {}, Output Loss: {}".format(i, total_loss.item(), loss_expl.item(), loss_output.item()))
 
+        if (i + 1) % 300 == 0 or i == args.num_iter - 1:
+            print(f"Save intermedate at {i+1}")
+            arr_x_adv.append(
+                x_adv.detach().cpu()
+            )
+
     # test with original model (with relu activations)
     model.change_beta(None)
     adv_expl, adv_acc, class_idx = get_expl(model, x_adv, method)
@@ -124,7 +133,12 @@ def main():
     # save results
     output_dir = make_dir(args.output_dir)
     plot_overview([x_target, x, x_adv], [target_expl, org_expl, adv_expl], data_mean, data_std, filename=f"{output_dir}overview_{args.method}.png")
-    torch.save(x_adv, f"{output_dir}x_{args.method}.pth")
+
+
+    arr_x_adv = torch.cat(arr_x_adv).detach().cpu()
+    print(arr_x_adv.shape)
+
+    torch.save(arr_x_adv, f"{output_dir}x_{args.method}.pth")
 
 
 if __name__ == "__main__":
