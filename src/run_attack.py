@@ -84,15 +84,12 @@ def main():
 
     target_expl, _, _ = get_expl(model, x_target, method)
     target_expl = target_expl.detach()
+    
+    # Rescale to make sure that the manipulated heatmap has low relevance by accident.
+    target_expl = target_expl * (org_expl.sum() / target_expl.sum())
 
     optimizer = torch.optim.Adam([x_adv], lr=args.lr)
     print("Ori Acc", torch.topk(org_acc, k=5))
-
-    print(f"Model(beta={model.beta})")
-
-    # for layer in model.layers:
-    #     if hasattr(layer, "activation_fn"):
-    #         print("Layer", layer, getattr(layer, "activation_fn"))
 
 
     for i in range(args.num_iter):
