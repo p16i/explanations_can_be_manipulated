@@ -178,9 +178,9 @@ def main():
 
         arr_sample_expl = torch.cat([
             org_expl,
-            target_expl,
-            adv_expl,
-        ]).detach().cpu()
+            target_expl.detach().cpu(),
+            adv_expl.detach().cpu(),
+        ])
 
         arr_all_x_adv.append(arr_sample_x_adv)
         arr_all_expl.append(arr_sample_expl)
