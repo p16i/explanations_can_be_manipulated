@@ -52,7 +52,7 @@ def load_image(data_mean, data_std, device, image_name):
     """
     Helper method to load an image into a torch tensor. Includes preprocessing.
     """
-    im = Image.open(image_name)
+    im = Image.open(image_name).convert("RGB")
     x = torchvision.transforms.Normalize(mean=data_mean, std=data_std)(
         torchvision.transforms.ToTensor()(
             torchvision.transforms.CenterCrop(224)(torchvision.transforms.Resize(256)(im))))
