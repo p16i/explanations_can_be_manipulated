@@ -113,9 +113,6 @@ def main():
         target_expl, target_acc, target_class_ix = get_expl(model, x_target, method)
         target_expl = target_expl.detach()
         
-        # Rescale to make sure that the manipulated heatmap has low relevance by accident.
-        target_expl = target_expl * (org_expl.sum() / target_expl.sum())
-
         optimizer = torch.optim.Adam([x_adv], lr=args.lr)
 
         arr_sample_x_adv = [
