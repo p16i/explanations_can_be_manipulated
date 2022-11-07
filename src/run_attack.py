@@ -189,7 +189,7 @@ def main():
 
 
     torch.save(arr_all_x_adv, f"{output_dir}/x-adv.pth")
-    torch.save(arr_sample_expl, f"{output_dir}/explanations.pth")
+    torch.save(arr_all_expl, f"{output_dir}/explanations.pth")
     print(f"Check results at {output_dir}")
 
 
