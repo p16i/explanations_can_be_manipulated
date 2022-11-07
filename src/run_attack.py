@@ -106,7 +106,7 @@ def main():
         x_adv = x.clone().detach().requires_grad_()
 
         # produce expls
-        org_expl, org_acc, ori_class_ix = get_expl(model, x, method)
+        org_expl, org_acc, ori_class_ix = get_expl(model, x, method, desired_index=label)
         org_expl = org_expl.detach().cpu()
 
 
@@ -153,7 +153,7 @@ def main():
 
         # test with original model (with relu activations)
         model.change_beta(None)
-        adv_expl, adv_acc, adv_class_ix = get_expl(model, x_adv, method)
+        adv_expl, adv_acc, adv_class_ix = get_expl(model, x_adv, method, desired_index=label)
 
         # save results
         plot_overview(
