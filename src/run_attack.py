@@ -190,8 +190,6 @@ def main():
         arr_all_x_adv.append(arr_sample_x_adv)
         arr_all_expl.append(arr_sample_expl)
 
-        break
-
     arr_all_x_adv = torch.stack(arr_all_x_adv)
     arr_all_expl = torch.stack(arr_all_expl)
     assert len(arr_all_x_adv.shape) == 5 and arr_all_x_adv.shape[0] == df.shape[0] and arr_all_x_adv.shape[2] == 3
