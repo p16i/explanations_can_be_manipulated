@@ -115,11 +115,13 @@ def main():
         
         optimizer = torch.optim.Adam([x_adv], lr=args.lr)
 
-        total_relevance_scaling = org_expl.sum() / target_expl.sum()
 
         arr_sample_x_adv = [
             x_adv.detach().cpu()
         ]
+
+        total_relevance_scaling = org_expl.sum() / target_expl.sum()
+        target_expl_rescaled = target_expl * total_relevance_scaling
 
         for i in range(args.num_iter):
             if args.beta_growth:
@@ -130,9 +132,9 @@ def main():
             # calculate loss
             adv_expl, adv_acc, _ = get_expl(model, x_adv, method, desired_index=label)
             loss_expl = F.mse_loss(
-                adv_expl / adv_expl.sum(),
+                adv_expl,
                 # we make sure that the total relevance score is preserved.
-                target_expl / target_expl.sum() * total_relevance_scaling
+                target_expl_rescaled
             )
             loss_output = F.mse_loss(adv_acc, org_acc.detach())
             total_loss = args.prefactors[0]*loss_expl + args.prefactors[1]*loss_output
@@ -187,6 +189,8 @@ def main():
 
         arr_all_x_adv.append(arr_sample_x_adv)
         arr_all_expl.append(arr_sample_expl)
+
+        break
 
     arr_all_x_adv = torch.stack(arr_all_x_adv)
     arr_all_expl = torch.stack(arr_all_expl)
