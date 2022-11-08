@@ -127,7 +127,11 @@ def main():
 
             # calculate loss
             adv_expl, adv_acc, _ = get_expl(model, x_adv, method, desired_index=label)
-            loss_expl = F.mse_loss(adv_expl / adv_expl.sum(), target_expl / target_expl.sum())
+            loss_expl = F.mse_loss(
+                adv_expl / adv_expl.sum(),
+                # we make sure that the total relevance score is preserved.
+                target_expl / target_expl.sum() * org_expl.sum()
+            )
             loss_output = F.mse_loss(adv_acc, org_acc.detach())
             total_loss = args.prefactors[0]*loss_expl + args.prefactors[1]*loss_output
 
