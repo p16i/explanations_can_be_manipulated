@@ -14,6 +14,25 @@ if os.environ.get('DISPLAY', '') == '':
 import matplotlib.pyplot as plt
 
 
+
+from matplotlib import pyplot as plt
+from matplotlib.colors import ListedColormap
+
+
+def viz_heatmap(ax, heatmap):
+
+
+    my_cmap = plt.cm.seismic(np.arange(plt.cm.seismic.N))
+    my_cmap[:, 0:3] *= 0.85
+    my_cmap = ListedColormap(my_cmap)
+
+    b = np.abs(heatmap).max()
+
+    ax.imshow(heatmap, vmin=-b, vmax=b, cmap=my_cmap)
+    ax.set_xticks([]); ax.set_yticks([])
+
+    ax.set_xlabel(f"$\sum R_i = {heatmap.sum():.4f}$")
+
 def plot_overview(images, heatmaps, mean, std,
                   captions=['Target Image', 'Original Image', 'Manipulated Image', 'Target Explanation', 'Original Explanation', 'Manipulated Explanation'],
                   filename="overview.png", images_per_row=3):
@@ -33,7 +52,7 @@ def load_image(data_mean, data_std, device, image_name):
     """
     Helper method to load an image into a torch tensor. Includes preprocessing.
     """
-    im = Image.open(image_name)
+    im = Image.open(image_name).convert("RGB")
     x = torchvision.transforms.Normalize(mean=data_mean, std=data_std)(
         torchvision.transforms.ToTensor()(
             torchvision.transforms.CenterCrop(224)(torchvision.transforms.Resize(256)(im))))
@@ -84,11 +103,9 @@ def get_expl(model, x, method, desired_index=None):
     if method == ExplainingMethod.grad_times_input or method == ExplainingMethod.integrated_grad:
         heatmap = heatmap * x
 
-    heatmap = torch.sum(torch.abs(heatmap), dim=1)
+    heatmap = torch.sum(heatmap, dim=1)
 
-    normalized_heatmap = heatmap / torch.sum(heatmap)
-
-    return normalized_heatmap, acc, class_idx
+    return heatmap, acc, class_idx
 
 
 def torch_to_image(tensor, mean=0, std=1):
@@ -105,6 +122,7 @@ def torch_to_image(tensor, mean=0, std=1):
 
 
 def heatmap_to_image(heatmap):
+    return heatmap.squeeze().detach().cpu().numpy()
     """
     Helper image to convert torch tensor containing a heatmap into image.
     """
@@ -160,10 +178,15 @@ def plot_grid(images, titles=None, images_per_row=3, cmap='gray', norm=mpl.color
                 a_ij = axes[i]
             else:
                 a_ij = axes[i, j]
-            a_ij.axis('off')
             if idx >= num_images:
                 break
-            a_ij.imshow(images[idx], cmap=cmap[idx], norm=norm, interpolation='nearest')
+
+            if "Explanation" in titles[idx]:
+                viz_heatmap(a_ij, images[idx])
+            else:
+                a_ij.imshow(images[idx], cmap=cmap[idx], norm=norm, interpolation='nearest')
+                a_ij.axis('off')
+
             a_ij.set_title(titles[idx])
 
     plt.subplots_adjust(wspace=0.05, hspace=0.05, left=0, right=1, bottom=0, top=1)

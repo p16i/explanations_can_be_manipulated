@@ -35,7 +35,10 @@ class MaxPool(nn.Module):
         if R.shape != torch.Size([batch_size, channels, height, width]):
             R = R.view(batch_size, channels, height, width)
 
-        return self.unpool(R, self.indices)
+
+        print(f"[{id(self)}]: {Rnew.shape}: {Rnew.min(), Rnew.max()}")
+
+        return Rnew
 
     def analyze(self, method, R):
 
@@ -46,7 +49,9 @@ class MaxPool(nn.Module):
         if R.shape != torch.Size([batch_size, channels, height, width]):
             R = R.view(batch_size, channels, height, width)
 
-        return self.unpool(R, self.indices)
+        Rnew = self.unpool(R, self.indices)
+        # print(f"[MaxUnPool: {id(self)}]: {Rnew.shape}: {Rnew.data.min(), Rnew.data.max(), Rnew.data.sum()}")
+        return Rnew
 
 
 class SumPool(nn.Module):

@@ -8,7 +8,7 @@ import numpy as np
 
 class Convolutional(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True,
-                 activation_fn=False, lrp_rule=LRPRule.alpha_beta, data_mean=None, data_std=None):
+                 activation_fn=False, lrp_rule=LRPRule.alpha_beta, data_mean=None, data_std=None, gamma=0.1):
         super(Convolutional, self).__init__()
         self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size,
                               stride=stride, padding=padding, dilation=dilation, groups=groups, bias=bias)
@@ -22,8 +22,8 @@ class Convolutional(nn.Module):
         self.beta = 0.0
 
         if data_mean is not None and data_std is not None:
-            self.lowest = float(np.min((0 - data_mean) / data_std))
-            self.highest = float(np.max((1 - data_mean) / data_std))
+            self.lowest = (0 - data_mean) / data_std
+            self.highest = (1 - data_mean) / data_std
 
         self.cov_calculator = CovarianceCalculator()
         self.register_buffer('pattern', torch.zeros(self.conv.weight.shape))
@@ -31,6 +31,8 @@ class Convolutional(nn.Module):
         # initialize parameters
         nn.init.xavier_uniform_(self.conv.weight.data)
         self.conv.bias.data.fill_(0)
+
+        self.gamma = gamma
 
     def forward(self, x):
         self.X = x
@@ -136,6 +138,10 @@ class Convolutional(nn.Module):
             return self._lrp_alpha_beta(R)
         elif self.lrp_rule == LRPRule.z_plus:
             return self._lrp_zp(R)
+        elif self.lrp_rule == LRPRule.gamma:
+            return self._lrp_gamma(R)
+        else:
+            raise ValueError("no LRP rule!")
 
     def _lrp_alpha_beta(self, R):
         _, _, height_filter, width_filter = self.conv.weight.shape
@@ -157,19 +163,47 @@ class Convolutional(nn.Module):
 
         return newR
 
+    def _lrp_gamma(self, R):
+        _, _, height_filter, width_filter = self.conv.weight.shape
+
+        weight = self.conv.weight
+        bias = self.conv.bias
+
+        p_weights = weight + self.gamma * weight.clamp(min=0)
+        p_bias = bias + self.gamma * bias.clamp(min=0)
+
+        ZA = torch.nn.functional.conv2d(input=self.X, weight=p_weights, bias=p_bias, padding=self.conv.padding,
+                                        stride=self.conv.stride, groups=self.conv.groups,
+                                        dilation=self.conv.dilation) + 1e-9
+
+        SA = self.alpha * R / ZA
+
+        newR = self.X * (self.deconvolve(SA, p_weights))
+
+        return newR
+
     def _lrp_zb(self, R):
 
         weights = self.conv.weight
-        p_weights = self.conv.weight.clamp(min=0)
-        n_weights = self.conv.weight.clamp(max=0)
+        bias = self.conv.bias
 
-        L, H = self.lowest * torch.ones_like(self.X), self.highest * torch.ones_like(self.X)
+        p_weights = weights.clamp(min=0)
+        n_weights = weights.clamp(max=0)
 
-        Z = torch.nn.functional.conv2d(input=self.X, weight=weights, bias=None, padding=self.conv.padding,
+        p_bias = bias.clamp(min=0)
+        n_bias = bias.clamp(max=0)
+
+        L = torch.tensor(self.lowest).reshape((1, 3, 1, 1)).float().to(self.X.device)
+        H = torch.tensor(self.highest).reshape((1, 3, 1, 1)).float().to(self.X.device)
+
+        L = (self.X.data * 0 + L)
+        H = (self.X.data * 0 + H)
+
+        Z = torch.nn.functional.conv2d(input=self.X, weight=weights, bias=bias, padding=self.conv.padding,
                                        stride=self.conv.stride, groups=self.conv.groups, dilation=self.conv.dilation) \
-            - torch.nn.functional.conv2d(input=L, weight=p_weights, bias=None, padding=self.conv.padding,
+            - torch.nn.functional.conv2d(input=L, weight=p_weights, bias=p_bias, padding=self.conv.padding,
                                          stride=self.conv.stride, groups=self.conv.groups, dilation=self.conv.dilation) \
-            - torch.nn.functional.conv2d(input=H, weight=n_weights, bias=None, padding=self.conv.padding,
+            - torch.nn.functional.conv2d(input=H, weight=n_weights, bias=n_bias, padding=self.conv.padding,
                                          stride=self.conv.stride, groups=self.conv.groups, dilation=self.conv.dilation) \
             + 1e-9
 

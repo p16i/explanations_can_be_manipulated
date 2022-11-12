@@ -9,7 +9,7 @@ import numpy as np
 class Dense(nn.Module):
     def __init__(self, in_dim, out_dim, activation_fn=None, lrp_rule=LRPRule.alpha_beta,
                  data_mean=0.0,
-                 data_std=1.0, BN=False):
+                 data_std=1.0, BN=False, gamma=0.0):
         super(Dense, self).__init__()
         self.linear = nn.Linear(in_dim, out_dim)
         self.batch_norm = None
@@ -32,6 +32,9 @@ class Dense(nn.Module):
         # initialize parameters
         nn.init.xavier_uniform_(self.linear.weight.data)
         self.linear.bias.data.fill_(0)
+
+
+        self.gamma = gamma
 
     def forward(self, x):
         x = x.view(x.shape[0], -1)
@@ -130,8 +133,12 @@ class Dense(nn.Module):
             return self._lrp_zb(R)
         elif self.lrp_rule == LRPRule.z_plus:
             return self._lrp_zp(R)
-        else:
+        elif self.lrp_rule == LRPRule.alpha_beta:
             return self._lrp_alpha_beta(R)
+        elif self.lrp_rule == LRPRule.gamma:
+            return self._lrp_gamma(R)
+        else:
+            raise ValueError("no LRP rule!")
 
     def _lrp_zp(self, R):
 
@@ -171,6 +178,25 @@ class Dense(nn.Module):
         C = S.mm(V)
         RM = self.beta * X * C
         Rnew = RP - RM
+
+        return Rnew
+
+    def _lrp_gamma(self, R):
+
+        X = self.X
+
+        weight = self.linear.weight
+        bias = self.linear.bias
+
+        if self.batch_norm is not None:
+            weight = weight * self.batch_norm.weight.unsqueeze(1) / torch.sqrt(
+                self.batch_norm.running_var.unsqueeze(1) + self.batch_norm.eps)
+
+        V = weight + self.gamma * weight.clamp(min=0.0)
+        Z = X.mm(V.t()) + bias + 1e-9
+        S = R / Z
+        C = S.mm(V)
+        Rnew = self.alpha * X * C
 
         return Rnew
 
