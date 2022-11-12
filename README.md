@@ -1,6 +1,35 @@
-# Explanations can be manipulated and Geometry is to blame
+# Explanations can be manipulated and Geometry is to blame (unofficial extended code)
 Explanation methods aim to make neural networks more trustworthy and interpretable. In this paper, we demonstrate a property of explanation methods which is disconcerting for both of these purposes. Namely, we show that explanations can be manipulated \emph{arbitrarily} by applying visually hardly perceptible perturbations to the input that keep the network's output approximately constant. We establish theoretically that this phenomenon can be related to certain geometrical properties of neural networks. This allows us to derive an upper bound on the susceptibility of explanations to manipulations. Based on this result, we propose effective mechanisms to enhance the robustness of explanations.
 
+---
+
+**Remarks**: This repository extends the original respository with the following changes (See [[Patch]][diff]):
+1. LRP-Gamma for VGG16 with the gamma value heuristic sused in [Eberle et al. (2020)][1];
+2. Objective function takes into account the preservation of total relevance;
+3. The attack script takes a CSV containing of original and target images and over them. It can be run by 
+     ```
+     $ head n02097474.csv
+     original,target
+     image1.jpeg,image2.jpeg
+     ...
+     
+     $python run_attack.py --data_dir ~/datasets/imagenet \
+          --cuda 
+          --seed_file n02097474.csv
+     ```
+
+[1]: https://github.com/oeberle/BiLRP_explain_similarity
+[diff]: https://github.com/pankessel/explanations_can_be_manipulated/compare/master...p16i:explanations_can_be_manipulated:multiple-files
+
+
+
+
+<div align="center">
+     <img width="50%" src="https://user-images.githubusercontent.com/1214890/201466690-a0c80c5b-3593-4a1f-aa61-c19a6497a9d0.png"/>
+     <div>Result from the extended code</div>
+</div>
+
+---
 ### What we do
 
 We manipulate images so their explanation resembles an _arbitrary_ target map. Below you can see our algorithm in action:
