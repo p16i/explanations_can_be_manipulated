@@ -4,9 +4,9 @@ Explanation methods aim to make neural networks more trustworthy and interpretab
 ---
 
 **Remarks**: This repository extends the original respository with the following changes (See [[Patch]][diff]):
-1. LRP-Gamma for VGG16 with the gamma value heuristic sused in [Eberle et al. (2020)][1];
-2. Objective function takes into account the preservation of total relevance;
-3. The attack script takes a CSV containing of original and target images and over them. It can be run by 
+1. LRP-Gamma for VGG16 with the gamma values {0.5, 0.25, 0.1, 0} used in the 1st and 2nd blocks, 3rd block, 4th block, and the 5th and the classification head respectively.
+3. Objective function takes into account the preservation of total relevance;
+4. The attack script takes a CSV containing of original and target images and over them. It can be run by 
      ```
      $ head n02097474.csv
      original,target
@@ -18,8 +18,7 @@ Explanation methods aim to make neural networks more trustworthy and interpretab
           --seed_file n02097474.csv
      ```
 
-[1]: https://github.com/oeberle/BiLRP_explain_similarity
-[diff]: https://github.com/pankessel/explanations_can_be_manipulated/compare/master...p16i:explanations_can_be_manipulated:multiple-files
+[diff]: https://github.com/pankessel/explanations_can_be_manipulated/compare/master...p16i:explanations_can_be_manipulated:master
 
 
 

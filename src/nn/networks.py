@@ -5,15 +5,21 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-# This is taken from https://github.com/oeberle/BiLRP_explain_similarity/blob/master/model/bilrp.py#L10
-def vgg_gamma(i):
-    '''Setting gamma according to vgg layer index i''' 
-    if i <=10:        gamma=0.5
-    if 11 <= i <= 17: gamma=0.25
-    if 18 <= i <= 24: gamma=0.1
-    if i > 24:        gamma=0.0
-    return gamma
+# The heuristics is similar to https://github.com/oeberle/BiLRP_explain_similarity/blob/master/model/bilrp.py#L10.
+# BUT, we correct the layer indices.
+# See https://colab.research.google.com/drive/1wcbbMB3mR_T-889JcXqxMbU7OImoDmM8#scrollTo=lP-3ayktTets
+def vgg_gamma(ix):
+    '''Setting gamma according to vgg layer index ix''' 
+    if 0 <= ix <= 9:
+        gamma = 0.5
+    elif 10 <= ix <= 16:
+        gamma = 0.25
+    elif 17 <= ix <= 23:
+        gamma = 0.1
+    elif ix >= 24:
+        gamma = 0.0
 
+    return gamma
 
 
 class ExplainableNet(nn.Module):
