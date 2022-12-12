@@ -24,7 +24,7 @@ Explanation methods aim to make neural networks more trustworthy and interpretab
 
 
 <div align="center">
-     <img width="50%" src="https://user-images.githubusercontent.com/1214890/201466690-a0c80c5b-3593-4a1f-aa61-c19a6497a9d0.png"/>
+     <img width="50%" src="https://user-images.githubusercontent.com/1214890/206981186-457c4c48-d388-4f16-8492-588da24f44ad.png"/>
      <div>Result from the extended code;</div>
 </div>
 
